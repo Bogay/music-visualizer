@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="../main.css">
+
+    <script type="text/javascript" src="../Common/webgl-utils.js"></script>
+    <script type="text/javascript" src="../Common/initShaders.js"></script>
+    <script type="text/javascript" src="../Common/MV.js"></script>
+    <script type="text/javascript" src="../Common/bogay-utils.js"></script>
+    <script type="text/javascript" src="../jquery-3.3.1.min.js"></script>
+    <script type="text/javascript" src="../js/effect.js"></script>
+    <script type="text/javascript" src="../js/ring.js"></script>
+    <script type="text/javascript" src="../js/ring2.js"></script>
+    <script type="text/javascript" src="../js/flat.js"></script>
+    <script type="text/javascript" src="../js/main.js"></script>
+
+    <!-- <script src="http://benvanik.github.com/WebGL-Inspector/core/embed.js"></script> -->
+
+    <script id="pure-color-fragment-shader" type="x-shader/x-fragment">
+        precision mediump float;
+
+        varying vec2 fTexCoord;
+        varying vec4 fPosition;
+
+        uniform sampler2D texture;
+
+        void main()
+        {
+            gl_FragColor = texture2D(texture, fTexCoord);
+            // if(gl_FragColor.a < 0.5) discard;
+        }
+    </script>
+
+    <script id="no-transform-vertex-shader" type="x-shader/x-vertex">
+        precision mediump float;
+
+        attribute vec2 vPosition;
+        attribute vec2 vTexCoord;
+
+        varying vec4 fPosition;
+        varying vec2 fTexCoord;
+
+        uniform mat4 modelingMatrix;
+        uniform mat4 viewingMatrix;
+        uniform mat4 projectionMatrix;
+        uniform float x_scalor;
+
+        void main()
+        {
+            vec4 vertex = vec4(vPosition, 0, 1);
+            fPosition = modelingMatrix * vertex;
+            fTexCoord = vTexCoord;
+            
+            vertex = modelingMatrix * vertex;
+            vertex.x *= x_scalor;
+            gl_Position = vertex;
+        }
+    </script>
+
+    <script id="bloom-vertex-shader" type="x-shader/x-vertex">
+        precision mediump float;
+
+        attribute vec2 vTexCoord;
+        varying vec2 fTexCoord;
+
+        void main()
+        {
+            fTexCoord = vTexCoord;
+        }
+    </script>
+
+    <script id="bloom-fragment-shader" type="x-shader/x-fragment">
+        precision mediump float;
+
+        varying vec2 fTexCoord;
+
+        uniform sampler2D texture;
+        uniform float x_unit;
+        uniform float y_unit;
+
+        void main()
+        {
+            vec4 final_color = vec4(0.0);
+            final_color += texture2D(texture, vec2(fTexCoord.x - x_unit, fTexCoord.y - y_unit));
+            final_color += texture2D(texture, vec2(fTexCoord.x - x_unit, fTexCoord.y));
+            final_color += texture2D(texture, vec2(fTexCoord.x - x_unit, fTexCoord.y + y_unit));
+            final_color += texture2D(texture, vec2(fTexCoord.x, fTexCoord.y - y_unit));
+            final_color += texture2D(texture, vec2(fTexCoord.x, fTexCoord.y)) * 2.0;
+            final_color += texture2D(texture, vec2(fTexCoord.x, fTexCoord.y + y_unit));
+            final_color += texture2D(texture, vec2(fTexCoord.x + x_unit, fTexCoord.y - y_unit));
+            final_color += texture2D(texture, vec2(fTexCoord.x + x_unit, fTexCoord.y));
+            final_color += texture2D(texture, vec2(fTexCoord.x + x_unit, fTexCoord.y + y_unit));
+
+            gl_FragColor = final_color / 10.0;
+        }
+    </script>
+
+</head>
+
+<body>
+
+    <br />
+    <button id="zButton">Rotate</button>
+    <button id="pButton" style="background-color:#00ff00">Pause</button>
+    <button id="dButton" style="background-color:#6688cc">Depth Test</button>
+    <br />
+    <audio id="myAudio" src="music/07.mp3" crossorigin="anonymous" controls></audio>
+    <br />
+    <canvas id="mainCanvas" width="1080" height="720">
+        Oops ... your browser doesn't support the HTML5 canvas element
+    </canvas>
+
+</body>
+
+</html>
