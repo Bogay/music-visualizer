@@ -75,22 +75,22 @@
 
         varying vec2 fTexCoord;
 
-        uniform sampler2D texture;
+        uniform sampler2D b_texture;
         uniform float x_unit;
         uniform float y_unit;
 
         void main()
         {
             vec4 final_color = vec4(0.0);
-            final_color += texture2D(texture, vec2(fTexCoord.x - x_unit, fTexCoord.y - y_unit));
-            final_color += texture2D(texture, vec2(fTexCoord.x - x_unit, fTexCoord.y));
-            final_color += texture2D(texture, vec2(fTexCoord.x - x_unit, fTexCoord.y + y_unit));
-            final_color += texture2D(texture, vec2(fTexCoord.x, fTexCoord.y - y_unit));
-            final_color += texture2D(texture, vec2(fTexCoord.x, fTexCoord.y)) * 2.0;
-            final_color += texture2D(texture, vec2(fTexCoord.x, fTexCoord.y + y_unit));
-            final_color += texture2D(texture, vec2(fTexCoord.x + x_unit, fTexCoord.y - y_unit));
-            final_color += texture2D(texture, vec2(fTexCoord.x + x_unit, fTexCoord.y));
-            final_color += texture2D(texture, vec2(fTexCoord.x + x_unit, fTexCoord.y + y_unit));
+            final_color += texture2D(b_texture, vec2(fTexCoord.x - x_unit, fTexCoord.y - y_unit));
+            final_color += texture2D(b_texture, vec2(fTexCoord.x - x_unit, fTexCoord.y));
+            final_color += texture2D(b_texture, vec2(fTexCoord.x - x_unit, fTexCoord.y + y_unit));
+            final_color += texture2D(b_texture, vec2(fTexCoord.x, fTexCoord.y - y_unit));
+            final_color += texture2D(b_texture, vec2(fTexCoord.x, fTexCoord.y)) * 2.0;
+            final_color += texture2D(b_texture, vec2(fTexCoord.x, fTexCoord.y + y_unit));
+            final_color += texture2D(b_texture, vec2(fTexCoord.x + x_unit, fTexCoord.y - y_unit));
+            final_color += texture2D(b_texture, vec2(fTexCoord.x + x_unit, fTexCoord.y));
+            final_color += texture2D(b_texture, vec2(fTexCoord.x + x_unit, fTexCoord.y + y_unit));
 
             gl_FragColor = final_color / 10.0;
         }

@@ -107,48 +107,46 @@ class Ring extends Effect {
 
         // configure texture
         this.textures = [];
+        for(let i=0 ; i<2 ; i++) this.textures.push(this.configureTexture());
         var image = new Image();
         image.onload = function () {
-            this.textures.push(this.configureTexture(image));
-
-            // create to render to
-            const targetTextureWidth = 1080;
-            const targetTextureHeight = 720;
-            const targetTexture = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, targetTexture);
-        
-            // define size and format of level 0
-            const level = 0;
-            const internalFormat = gl.RGBA;
-            const border = 0;
-            const format = gl.RGBA;
-            const type = gl.UNSIGNED_BYTE;
-            const data = null;
-            gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
-                            targetTextureWidth, targetTextureHeight, border,
-                            format, type, data);
-            
-            // set the filtering so we don't need mips
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    
-            this.textures.push(targetTexture);
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, this.textures[0]);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
         }.bind(this);
         image.src = 'tex.png';
+
+        // create to render to
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, this.textures[1]);
+    
+        // define size and format of level 0
+        const targetTextureWidth = 1080;
+        const targetTextureHeight = 720;
+        const level = 0;
+        const internalFormat = gl.RGBA;
+        const border = 0;
+        const format = gl.RGBA;
+        const type = gl.UNSIGNED_BYTE;
+        const data = null;
+        gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
+                        targetTextureWidth, targetTextureHeight, border,
+                        format, type, data);
 
         // configure frame buffer
         this.fb = gl.createFramebuffer();
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.textures[1], 0);
 
+        gl.useProgram(this.normalProgram);
         gl.uniform1i(gl.getUniformLocation(this.normalProgram, 'texture'), 0);
-        gl.uniform1i(gl.getUniformLocation(this.bloomProgram, 'texture'), 1);
-
         gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, this.textures[1]);
-        gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, this.textures[0]);
+
+        gl.useProgram(this.bloomProgram);
+        gl.uniform1i(gl.getUniformLocation(this.bloomProgram, 'b_texture'), 1);
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, this.textures[1]);
 
         // init frontend listener
         $('#zButton').on(
@@ -217,16 +215,20 @@ class Ring extends Effect {
         ];
 
         this.initAttribute(texCoord, 'vTexCoord', 2);
-
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
+        gl.drawArrays(gl.TRIANGLES, 0, 6); 
     }
 
     renderScene() {
+        if(gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE)
+        {
+            console.log('frame buffer is not complete!');
+        }
+
         // render ring
         gl.useProgram(this.normalProgram);
         this.program = this.normalProgram;
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
-        gl.activeTexture(gl.TEXTURE1);
+        gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.textures[0]);
         gl.viewport(0, 0, canvas.width, canvas.height);
 
@@ -237,7 +239,7 @@ class Ring extends Effect {
         gl.useProgram(this.bloomProgram);
         this.program = this.bloomProgram;
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        gl.activeTexture(gl.TEXTURE0);
+        gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, this.textures[1]);
         gl.viewport(0, 0, canvas.width, canvas.height);
 
@@ -246,7 +248,7 @@ class Ring extends Effect {
         gl.uniform1f(gl.getUniformLocation(this.program, 'y_unit'), 1/720);
 
         gl.clearColor(0, 0, 0, 1);
-        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         this.bloom();
 
         console.log('rendering...');
