@@ -37,11 +37,18 @@ class Effect {
     initAttribute(arr, attr, unit) {
         // config buffer
         var b;
-        if (attr && !(attr in this.attributeBuffer)) {
+
+        // check for program
+        if(!(this.program in this.attributeBuffer))
+        {
+            this.attributeBuffer[this.program] = {};
+        }
+
+        if (attr && !(attr in this.attributeBuffer[this.program])) {
             b = gl.createBuffer();
-            this.attributeBuffer[attr] = b;
+            this.attributeBuffer[this.program][attr] = b;
         } else {
-            b = this.attributeBuffer[attr];
+            b = this.attributeBuffer[this.program][attr];
         }
 
         if (!b) {
