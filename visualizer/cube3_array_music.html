@@ -17,7 +17,7 @@
 
     <script src="http://benvanik.github.com/WebGL-Inspector/core/embed.js"></script>
 
-    <script id="pure-color-fragment-shader" type="x-shader/x-fragment">
+    <script id="pure-tex-fragment-shader" type="x-shader/x-fragment">
         precision mediump float;
 
         varying vec2 fTexCoord;
@@ -58,7 +58,7 @@
         }
     </script>
 
-    <script id="bloom-vertex-shader" type="x-shader/x-vertex">
+    <script id="bg-vertex-shader" type="x-shader/x-vertex">
         precision mediump float;
 
         attribute vec2 vPosition;
@@ -97,7 +97,6 @@
             gl_FragColor = final_color / 10.0;
         }
     </script>
-
 </head>
 
 <body>
@@ -107,7 +106,7 @@
     <button id="pButton" style="background-color:#00ff00">Pause</button>
     <button id="dButton" style="background-color:#6688cc">Depth Test</button>
     <br />
-    <audio id="myAudio" src="music/bensound-energy.mp3" crossorigin="anonymous" controls></audio>
+    <audio id="myAudio" src="music/20.mp3" crossorigin="anonymous" controls></audio>
     <br />
     <canvas id="mainCanvas" width="1080" height="720">
         Oops ... your browser doesn't support the HTML5 canvas element
