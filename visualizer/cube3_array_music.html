@@ -61,12 +61,14 @@
     <script id="bloom-vertex-shader" type="x-shader/x-vertex">
         precision mediump float;
 
+        attribute vec2 vPosition;
         attribute vec2 vTexCoord;
         varying vec2 fTexCoord;
 
         void main()
         {
             fTexCoord = vTexCoord;
+            gl_Position = vec4(vPosition, 0, 1);
         }
     </script>
 

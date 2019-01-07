@@ -206,6 +206,15 @@ class Ring extends Effect {
 
     bloom() {
         var texCoord = [
+            vec2(0, 0),
+            vec2(1, 0),
+            vec2(0, 1),
+            vec2(0, 1),
+            vec2(1, 1),
+            vec2(1, 0)
+        ];
+
+        var pos = [
             vec2(-1, -1),
             vec2(1, -1),
             vec2(-1, 1),
@@ -214,7 +223,9 @@ class Ring extends Effect {
             vec2(1, -1)
         ];
 
+        this.initAttribute(pos, 'vPosition', 2);
         this.initAttribute(texCoord, 'vTexCoord', 2);
+
         gl.drawArrays(gl.TRIANGLES, 0, 6); 
     }
 
@@ -236,16 +247,16 @@ class Ring extends Effect {
         this.renderRing();
 
         // bloom
-        gl.useProgram(this.bloomProgram);
-        this.program = this.bloomProgram;
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, this.textures[1]);
         gl.viewport(0, 0, canvas.width, canvas.height);
+        gl.useProgram(this.bloomProgram);
+        this.program = this.bloomProgram;
 
         // set unit
-        gl.uniform1f(gl.getUniformLocation(this.program, 'x_unit'), 1/1080);
-        gl.uniform1f(gl.getUniformLocation(this.program, 'y_unit'), 1/720);
+        gl.uniform1f(gl.getUniformLocation(this.program, 'x_unit'), 2/1080);
+        gl.uniform1f(gl.getUniformLocation(this.program, 'y_unit'), 2/720);
 
         gl.clearColor(0, 0, 0, 1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
