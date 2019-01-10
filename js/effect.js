@@ -32,9 +32,15 @@ class Effect {
 
         this.attributeBuffer = {};
         this.attributeLocation = {};
+        this.programTable = {};
     }
 
     switchProgram(prog) {
+        // set name
+        this.programName = prog;
+
+        // set program
+        prog = this.programTable[prog];
         gl.useProgram(prog);
         this.program = prog;
     }
@@ -44,16 +50,16 @@ class Effect {
         var b;
 
         // check for program
-        if(!(this.program in this.attributeBuffer))
+        if(!(this.programName in this.attributeBuffer))
         {
-            this.attributeBuffer[this.program] = {};
+            this.attributeBuffer[this.programName] = {};
         }
 
-        if (attr && !(attr in this.attributeBuffer[this.program])) {
+        if (attr && !(attr in this.attributeBuffer[this.programName])) {
             b = gl.createBuffer();
-            this.attributeBuffer[this.program][attr] = b;
+            this.attributeBuffer[this.programName][attr] = b;
         } else {
-            b = this.attributeBuffer[this.program][attr];
+            b = this.attributeBuffer[this.programName][attr];
         }
 
         if (!b) {

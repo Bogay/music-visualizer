@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" type="text/css" href="css/vis.css">
+
+    <script type="text/javascript" src="Common/webgl-utils.js"></script>
+    <script type="text/javascript" src="Common/initShaders.js"></script>
+    <script type="text/javascript" src="Common/MV.js"></script>
+    <script type="text/javascript" src="Common/bogay-utils.js"></script>
+    <script type="text/javascript" src="Common/jquery-3.3.1.min.js"></script>
+    <script type="text/javascript" src="js/effect.js"></script>
+    <script type="text/javascript" src="js/ring.js"></script>
+    <script type="text/javascript" src="js/ring2.js"></script>
+    <script type="text/javascript" src="js/flat.js"></script>
+    <script type="text/javascript" src="js/main.js"></script>
+
+    <script src="http://benvanik.github.com/WebGL-Inspector/core/embed.js"></script>
+
+    <script id="pure-tex-fragment-shader" type="x-shader/x-fragment">
+        precision mediump float;
+
+        varying vec2 fTexCoord;
+        varying vec4 fPosition;
+
+        uniform sampler2D texture;
+        uniform vec4 uColor;
+
+        void main()
+        {
+            gl_FragColor = texture2D(texture, fTexCoord) * uColor;
+        }
+    </script>
+
+    <script id="dark-tex-fragment-shader" type="x-shader/x-fragment">
+        precision mediump float;
+
+        varying vec2 fTexCoord;
+        varying vec4 fPosition;
+
+        uniform sampler2D texture;
+
+        const vec4 mask = vec4(-0.6, -0.6, -0.6, 1);
+
+        void main()
+        {
+            gl_FragColor = (texture2D(texture, fTexCoord) + mask) / 2.0;
+            // if(gl_FragColor.a < 0.5) discard;
+        }
+    </script>
+
+    <script id="no-transform-vertex-shader" type="x-shader/x-vertex">
+        precision mediump float;
+
+        attribute vec2 vPosition;
+        attribute vec2 vTexCoord;
+
+        varying vec4 fPosition;
+        varying vec2 fTexCoord;
+
+        uniform mat4 modelingMatrix;
+        uniform mat4 viewingMatrix;
+        uniform mat4 projectionMatrix;
+        uniform float x_scalor;
+
+        void main()
+        {
+            vec4 vertex = vec4(vPosition, 0, 1);
+            fPosition = modelingMatrix * vertex;
+            fTexCoord = vTexCoord;
+            
+            vertex = modelingMatrix * vertex;
+            vertex.x *= x_scalor;
+            gl_Position = vertex;
+        }
+    </script>
+
+    <script id="bg-vertex-shader" type="x-shader/x-vertex">
+        precision mediump float;
+
+        attribute vec2 vPosition;
+        attribute vec2 vTexCoord;
+        varying vec2 fTexCoord;
+
+        void main()
+        {
+            fTexCoord = vTexCoord;
+            gl_Position = vec4(vPosition, 0, 1);
+        }
+    </script>
+
+    <script id="bloom-fragment-shader" type="x-shader/x-fragment">
+        precision mediump float;
+
+        varying vec2 fTexCoord;
+
+        uniform sampler2D texture;
+        uniform int horizontal;
+        uniform float x_unit;
+        uniform float y_unit;
+
+        uniform float weight[3];
+
+        void main()
+        {
+            vec4 final_color = vec4(0.0);
+
+            final_color += (texture2D(texture, vec2(fTexCoord.x + 7.0 * x_unit, fTexCoord.y + 7.0 * y_unit)) * 0.0044299121055113265);
+            final_color += (texture2D(texture, vec2(fTexCoord.x + 6.0 * x_unit, fTexCoord.y + 6.0 * y_unit)) * 0.00895781211794);
+            final_color += (texture2D(texture, vec2(fTexCoord.x + 5.0 * x_unit, fTexCoord.y + 5.0 * y_unit)) * 0.0215963866053);
+            final_color += (texture2D(texture, vec2(fTexCoord.x + 4.0 * x_unit, fTexCoord.y + 4.0 * y_unit)) * 0.0443683338718);
+            final_color += (texture2D(texture, vec2(fTexCoord.x + 3.0 * x_unit, fTexCoord.y + 3.0 * y_unit)) * 0.0776744219933);
+            final_color += (texture2D(texture, vec2(fTexCoord.x + 2.0 * x_unit, fTexCoord.y + 2.0 * y_unit)) * 0.115876621105);
+            final_color += (texture2D(texture, vec2(fTexCoord.x + 1.0 * x_unit, fTexCoord.y + 1.0 * y_unit)) * 0.147308056121);
+            final_color += (texture2D(texture, vec2(fTexCoord.x + 0.0 * x_unit, fTexCoord.y + 0.0 * y_unit)) * 0.159576912161);
+            final_color += (texture2D(texture, vec2(fTexCoord.x - 1.0 * x_unit, fTexCoord.y - 1.0 * y_unit)) * 0.147308056121);
+            final_color += (texture2D(texture, vec2(fTexCoord.x - 2.0 * x_unit, fTexCoord.y - 2.0 * y_unit)) * 0.115876621105);
+            final_color += (texture2D(texture, vec2(fTexCoord.x - 3.0 * x_unit, fTexCoord.y - 3.0 * y_unit)) * 0.0776744219933);
+            final_color += (texture2D(texture, vec2(fTexCoord.x - 4.0 * x_unit, fTexCoord.y - 4.0 * y_unit)) * 0.0443683338718);
+            final_color += (texture2D(texture, vec2(fTexCoord.x - 5.0 * x_unit, fTexCoord.y - 5.0 * y_unit)) * 0.0215963866053);
+            final_color += (texture2D(texture, vec2(fTexCoord.x - 6.0 * x_unit, fTexCoord.y - 6.0 * y_unit)) * 0.00895781211794);
+            final_color += (texture2D(texture, vec2(fTexCoord.x - 7.0 * x_unit, fTexCoord.y - 7.0 * y_unit)) * 0.0044299121055113265);
+
+            gl_FragColor = final_color;
+        }
+    </script>
+</head>
+
+<body>
+
+    <div style="float: left">
+            <br />
+            <canvas id="mainCanvas" width="1080" height="720">
+                Oops ... your browser doesn't support the HTML5 canvas element
+            </canvas>
+    </div>
+
+    <br />
+    <div id="param">
+        <input id="musicFile" type="file"> <br/>
+        <input id="sqColor" type="color" value="#666666"> <br/>
+        <button id="rButton">Render!</button>
+    </div>
+    <br />
+    <audio id="myAudio" crossorigin="anonymous" controls></audio>
+
+</body>
+
+</html>

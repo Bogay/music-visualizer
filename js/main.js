@@ -15,7 +15,35 @@ window.onload = function () {
 
     console.log('GL ready');
 
-    eff.initEffect();
-};
+    $('#rButton').on('click', function(e) {
+        var audio = $('#myAudio');
+        var target = $('#musicFile').get(0);
+        var file = target.files[0];
+        var reader = new FileReader();
+        
+        if (target.files && file) {
+            var color = $('#sqColor').get(0).value;
+            color = color.substring(1);
+            color = parseInt(color, 16);
+            eff.colors = new Array(3);
+            for(let i=2 ; i>=0 ; i--)
+            {
+                eff.colors[i] = (color % 256) / 255;
+                color /= 256;
+            }
+            eff.colors.push(1.0);
 
-// window.onload = initRing;
+            reader.onload = function (e) {
+                audio.attr('src', e.target.result);
+                eff.initEffect();
+            };
+            reader.readAsDataURL(file);
+            $('#param').remove();
+        }
+        else
+        {
+            alert('you should select a file first');
+        }
+        
+    });
+}; 

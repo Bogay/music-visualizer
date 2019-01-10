@@ -31,8 +31,8 @@ class Ring extends Effect {
         var t = 2 * this.amount + 1;
         t *= 6;
         for (let i = 0; i < t; i++) {
-            this.colors.push(vec4(0.9, 0.6, 0.5, 0.5));
-            this.normals.push(vec4(0.0, 0.0, 1.0, 1.0));
+            // this.colors.push(vec4(0.9, 0.6, 0.5, 0.5));
+            // this.normals.push(vec4(0.0, 0.0, 1.0, 1.0));
             this.texCoords.push(texCoord[i % 6]);
         }
     }
@@ -61,7 +61,7 @@ class Ring extends Effect {
 
     initEffect() {
         // init this attribute
-        this.pause = 1;
+        this.pause = 0;
         this.theda = 0;
         this.speed = 0.1;
         this.radius = 0.5;
@@ -78,10 +78,15 @@ class Ring extends Effect {
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
         // init programs
-        this.normalProgram = initShaders(gl, 'no-transform-vertex-shader', 'pure-tex-fragment-shader');
-        this.bloomProgram = initShaders(gl, 'bg-vertex-shader', 'bloom-fragment-shader');
-        this.fillProgram = initShaders(gl, 'bg-vertex-shader', 'pure-tex-fragment-shader');
-        this.switchProgram(this.normalProgram);
+        var normalProgram = initShaders(gl, 'no-transform-vertex-shader', 'pure-tex-fragment-shader');
+        var bloomProgram = initShaders(gl, 'bg-vertex-shader', 'bloom-fragment-shader');
+        var fillProgram = initShaders(gl, 'bg-vertex-shader', 'dark-tex-fragment-shader');
+
+        this.programTable['normal'] = normalProgram;
+        this.programTable['bloom'] = bloomProgram;
+        this.programTable['fill'] = fillProgram;
+
+        this.switchProgram('normal');
 
         this.initAngle();
         this.initArray();
@@ -102,58 +107,74 @@ class Ring extends Effect {
         gl.uniformMatrix4fv(this.viewingLoc, 0, flatten(this.viewing));
         gl.uniformMatrix4fv(this.projectionLoc, 0, flatten(this.projection));
         
-        gl.uniform1f(gl.getUniformLocation(this.normalProgram, 'x_scalor'), this.ratio);
+        gl.uniform1f(gl.getUniformLocation(this.programTable['normal'], 'x_scalor'), this.ratio);
+        gl.uniform4fv(gl.getUniformLocation(this.programTable['normal'], 'uColor'), this.colors);
 
         // configure texture
         this.textures = [];
         // 0: square
-        // 1: framebuffer
-        // 3: background
-        for(let i=0 ; i<3 ; i++) this.textures.push(this.configureTexture());
+        // 1: background
+        // 2, 3: framebuffer
+        for(let i=0 ; i<4 ; i++) this.textures.push(this.configureTexture());
 
-        // create to render to
-        gl.bindTexture(gl.TEXTURE_2D, this.textures[1]);
-    
-        // define size and format of level 0
-        const targetTextureWidth = 1080;
-        const targetTextureHeight = 720;
-        const level = 0;
-        const internalFormat = gl.RGBA;
-        const border = 0;
-        const format = gl.RGBA;
-        const type = gl.UNSIGNED_BYTE;
-        const data = null;
-        gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
-                        targetTextureWidth, targetTextureHeight, border,
-                        format, type, data);
+        this.pingpongFramebuffer = [];
+        for(let i=2 ; i<4 ; i++)
+        {
+            gl.activeTexture(gl.TEXTURE0 + i);
+            // create to render to
+            gl.bindTexture(gl.TEXTURE_2D, this.textures[i]);
+        
+            // define size and format of level 0
+            const targetTextureWidth = 1080;
+            const targetTextureHeight = 720;
+            const level = 0;
+            const internalFormat = gl.RGBA;
+            const border = 0;
+            const format = gl.RGBA;
+            const type = gl.UNSIGNED_BYTE;
+            const data = null;
+            gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
+                            targetTextureWidth, targetTextureHeight, border,
+                            format, type, data);
 
-        // configure frame buffer
-        this.fb = gl.createFramebuffer();
-        gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.textures[1], 0);
+            // configure frame buffer
+            var fb = gl.createFramebuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.textures[i], 0);
 
-        this.switchProgram(this.normalProgram);
-        gl.uniform1i(gl.getUniformLocation(this.normalProgram, 'texture'), 0);
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, this.textures[0]);
+            this.pingpongFramebuffer.push(fb);
+        }
 
-        this.switchProgram(this.bloomProgram);
-        gl.uniform1i(gl.getUniformLocation(this.bloomProgram, 'b_texture'), 1);
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, this.textures[1]);
+        this.switchProgram('normal');
+        gl.uniform1i(gl.getUniformLocation(this.programTable['normal'], 'texture'), 0);
 
-        this.switchProgram(this.fillProgram);
-        gl.uniform1i(gl.getUniformLocation(this.fillProgram, 'texture'), 2);
-        gl.activeTexture(gl.TEXTURE2);
-        gl.bindTexture(gl.TEXTURE_2D, this.textures[2]);
+        // for render background
+        this.switchProgram('fill');
+        gl.uniform1i(gl.getUniformLocation(this.programTable['fill'], 'texture'), 1);
+
+        // pingpong 
+        this.switchProgram('bloom');
+        gl.uniform1fv(gl.getUniformLocation(this.program, 'weight'), [0.25, 0.15, 0.1]);
+        // set unit
+        // gl.uniform1f(gl.getUniformLocation(this.program, 'x_unit'), 1 / 1080);
+        // gl.uniform1f(gl.getUniformLocation(this.program, 'y_unit'), 1 / 720);
+        // set texture
+        gl.uniform1i(gl.getUniformLocation(this.program, 'texture'), 2);
+
+        // bind textures
+        for(let i=0 ; i<4 ; i++)
+        {
+            gl.activeTexture(gl.TEXTURE0 + i);
+            gl.bindTexture(gl.TEXTURE_2D, this.textures[i]);
+        }
 
         // init frontend listener
-        $('#zButton').on(
-            'click',
-            () => {
-                this.pause = !this.pause;
-            }
-        );
+        // $('#zButton').on(
+        //     'click',
+        //     () => {
+        //         this.pause = !this.pause;
+        //     }
+        // );
 
         this.prepareAnalyser();
         this.initVolumeBuffer();
@@ -161,17 +182,20 @@ class Ring extends Effect {
         // configure images
         var image = new Image();
         image.onload = function () {
+            gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, this.textures[0]);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
         }.bind(this);
-        image.src = 'tex.png';
+        image.src = 'image/tex.png';
+        // image.src = 'image/solid_square.png';
 
         var bg_img = new Image();
         bg_img.onload = function() {
-            gl.bindTexture(gl.TEXTURE_2D, this.textures[2]);
+            gl.activeTexture(gl.TEXTURE1);
+            gl.bindTexture(gl.TEXTURE_2D, this.textures[1]);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bg_img);
         }.bind(this);
-        bg_img.src = 'bg_dark.jpg';
+        bg_img.src = 'image/bg.jpg';
         
         console.log('start rendering...');
         this.renderScene();
@@ -250,47 +274,50 @@ class Ring extends Effect {
         }
 
         // render ring to framebuffer
-        this.switchProgram(this.normalProgram);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, this.textures[0]);
+        this.switchProgram('normal');
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.pingpongFramebuffer[0]);
         gl.viewport(0, 0, canvas.width, canvas.height);
 
-        gl.clearColor(0, 0, 0, 0);
+        gl.clearColor(1, 1, 1, 0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         this.renderRing();
 
-        // render background
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        gl.activeTexture(gl.TEXTURE2);
-        gl.bindTexture(gl.TEXTURE_2D, this.textures[2]);
-        gl.viewport(0, 0, canvas.width, canvas.height);
-        this.switchProgram(this.fillProgram);
+        // bloom
+        this.switchProgram('bloom');
+        var texLoc = gl.getUniformLocation(this.program, 'texture');
+        var xLoc = gl.getUniformLocation(this.program, 'x_unit');
+        var yLoc = gl.getUniformLocation(this.program, 'y_unit');
 
-        gl.clearColor(0, 0, 0, 1);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.pingpongFramebuffer[1]);
+        gl.uniform1i(texLoc, 2);
+        gl.uniform1f(xLoc, 1 / canvas.width);
+        gl.uniform1f(yLoc, 0);
+        gl.clearColor(this.colors[0], this.colors[1], this.colors[2], 0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
         this.fill();
 
-        // bloom
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, this.textures[1]);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.pingpongFramebuffer[0]);
+        gl.uniform1i(texLoc, 3);
+        gl.uniform1f(xLoc, 0);
+        gl.uniform1f(yLoc, 1 / canvas.height);
+        gl.clearColor(this.colors[0], this.colors[1], this.colors[2], 0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        this.fill();
+
+        // render background
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.viewport(0, 0, canvas.width, canvas.height);
-        this.switchProgram(this.bloomProgram);
+        this.switchProgram('fill');
+        gl.uniform1i(gl.getUniformLocation(this.program, 'texture'), 1);
+        this.fill();
 
-        // set unit
-        gl.uniform1f(gl.getUniformLocation(this.program, 'x_unit'), 3 / 1080);
-        gl.uniform1f(gl.getUniformLocation(this.program, 'y_unit'), 3 / 720);
-
+        // render bloomed ring
+        this.switchProgram('bloom');
+        gl.uniform1i(gl.getUniformLocation(this.program, 'texture'), 3);
         this.fill();
 
         // draw ring again
-        this.switchProgram(this.normalProgram);
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, this.textures[0]);
-        gl.viewport(0, 0, canvas.width, canvas.height);
-
-        gl.clearColor(0, 0, 0, 0);
+        this.switchProgram('normal');
         this.renderRing();
 
         console.log('rendering...');
