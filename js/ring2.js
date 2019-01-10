@@ -19,7 +19,7 @@ class Ring extends Effect {
         }
     }
 
-    initArray() {
+    initTexCoord() {
         var texCoord = [
             vec2(0, 0),
             vec2(0, 1),
@@ -31,8 +31,6 @@ class Ring extends Effect {
         var t = 2 * this.amount + 1;
         t *= 6;
         for (let i = 0; i < t; i++) {
-            // this.colors.push(vec4(0.9, 0.6, 0.5, 0.5));
-            // this.normals.push(vec4(0.0, 0.0, 1.0, 1.0));
             this.texCoords.push(texCoord[i % 6]);
         }
     }
@@ -64,8 +62,8 @@ class Ring extends Effect {
         this.pause = 0;
         this.theda = 0;
         this.speed = 0.1;
-        this.radius = 0.5;
-        this.volumeBufferSize = 3;
+        this.radius = 0.55;
+        this.volumeBufferSize = 5;
         this.volumeBuffer = [];
         this.ratio = canvas.height / canvas.width;
 
@@ -89,7 +87,7 @@ class Ring extends Effect {
         this.switchProgram('normal');
 
         this.initAngle();
-        this.initArray();
+        this.initTexCoord();
         this.initPoints();
 
         // init attributes
@@ -155,9 +153,6 @@ class Ring extends Effect {
         // pingpong 
         this.switchProgram('bloom');
         gl.uniform1fv(gl.getUniformLocation(this.program, 'weight'), [0.25, 0.15, 0.1]);
-        // set unit
-        // gl.uniform1f(gl.getUniformLocation(this.program, 'x_unit'), 1 / 1080);
-        // gl.uniform1f(gl.getUniformLocation(this.program, 'y_unit'), 1 / 720);
         // set texture
         gl.uniform1i(gl.getUniformLocation(this.program, 'texture'), 2);
 
@@ -167,14 +162,6 @@ class Ring extends Effect {
             gl.activeTexture(gl.TEXTURE0 + i);
             gl.bindTexture(gl.TEXTURE_2D, this.textures[i]);
         }
-
-        // init frontend listener
-        // $('#zButton').on(
-        //     'click',
-        //     () => {
-        //         this.pause = !this.pause;
-        //     }
-        // );
 
         this.prepareAnalyser();
         this.initVolumeBuffer();
@@ -195,10 +182,20 @@ class Ring extends Effect {
             gl.bindTexture(gl.TEXTURE_2D, this.textures[1]);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bg_img);
         }.bind(this);
-        bg_img.src = 'image/bg.jpg';
+        bg_img.src = 'image/bg2.png';
         
         console.log('start rendering...');
         this.renderScene();
+    }
+
+    mapping(upperBound, lowerBound) {
+        var diff = upperBound - lowerBound;
+        if(diff < 0.01)
+            return function(v) { return 1; };
+        else
+            return function(v) {
+                return 0.25 + (v - lowerBound) / diff;
+            };
     }
 
     renderRing() {
@@ -211,6 +208,19 @@ class Ring extends Effect {
 
         var nn = 2 * this.amount + 1;
         var vols = this.getFrequencyDate();
+
+        // contrast
+        var mx, mn;
+        mx = mn = vols[0];
+        for(let i=1 ; i<vols.length ; i++)
+        {
+            if(vols[i] > mx) mx = vols[i];
+            else if(vols[i] < mn) mn = vols[i];
+        }
+        var f = this.mapping(mx, mn);
+        vols.forEach(function(v, i) {
+            vols[i] = Math.max(v * f(v), 0.005);
+        });
 
         // calculate positions
         this.pos = [];
