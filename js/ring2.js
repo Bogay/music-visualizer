@@ -57,12 +57,47 @@ class Ring extends Effect {
             this.volumeBuffer.push(this.getFrequencyDate());
     }
 
+    normalDistribution(std, mean, num) {
+        var r = [];
+        var d = 1 / (std * Math.sqrt(2 * Math.PI));
+        var t, s = 0;
+
+        for(let i=0 ; i<num ; i++)
+        {
+            t = i - mean;
+            t *= -t;
+            t = d * Math.exp(t / (2 * std * std));
+            r.push(t);
+            s += t;
+        }
+        s -= (r[0] / 2);
+        s *= 2;
+
+        r.forEach(function(v, i) {
+            r[i] = v / s;
+        });
+
+        return r;
+    }
+
+    configureImage(src, n) {
+        var image = new Image();
+        image.onload = function () {
+            gl.activeTexture(gl.TEXTURE0 + n);
+            gl.bindTexture(gl.TEXTURE_2D, this.textures[n]);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        }.bind(this);
+        image.src = src;
+
+        return image;
+    }
+
     initEffect() {
         // init this attribute
         this.pause = 0;
         this.theda = 0;
         this.speed = 0.1;
-        this.radius = 0.55;
+        this.radius = 0.6;
         this.volumeBufferSize = 5;
         this.volumeBuffer = [];
         this.ratio = canvas.height / canvas.width;
@@ -113,7 +148,7 @@ class Ring extends Effect {
         // 0: square
         // 1: background
         // 2, 3: framebuffer
-        for(let i=0 ; i<4 ; i++) this.textures.push(this.configureTexture());
+        for(let i=0 ; i<5 ; i++) this.textures.push(this.configureTexture());
 
         this.pingpongFramebuffer = [];
         for(let i=2 ; i<4 ; i++)
@@ -152,7 +187,8 @@ class Ring extends Effect {
 
         // pingpong 
         this.switchProgram('bloom');
-        gl.uniform1fv(gl.getUniformLocation(this.program, 'weight'), [0.25, 0.15, 0.1]);
+        // gl.uniform1i(gl.getUniformLocation(this.program, 'bloom_size'), 8);
+        gl.uniform1fv(gl.getUniformLocation(this.program, 'weight'), this.normalDistribution(4, 0, 9));
         // set texture
         gl.uniform1i(gl.getUniformLocation(this.program, 'texture'), 2);
 
@@ -167,14 +203,8 @@ class Ring extends Effect {
         this.initVolumeBuffer();
         
         // configure images
-        var image = new Image();
-        image.onload = function () {
-            gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_2D, this.textures[0]);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-        }.bind(this);
-        image.src = 'image/tex.png';
-        // image.src = 'image/solid_square.png';
+        this.configureImage('image/tex.png', 0);
+        this.configureImage('image/solid_square.png', 4);
 
         var bg_img = new Image();
         bg_img.onload = function() {
@@ -182,8 +212,14 @@ class Ring extends Effect {
             gl.bindTexture(gl.TEXTURE_2D, this.textures[1]);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bg_img);
         }.bind(this);
-        bg_img.src = 'image/bg2.png';
-        
+        try {
+            bg_img.src = URL.createObjectURL(eff.bg);
+        }
+        catch(e) {
+            console.log(e);
+            bg_img.src = 'image/bg2.png';
+        }
+
         console.log('start rendering...');
         this.renderScene();
     }
@@ -194,7 +230,7 @@ class Ring extends Effect {
             return function(v) { return 1; };
         else
             return function(v) {
-                return 0.25 + (v - lowerBound) / diff;
+                return 0.25 + 1.25 * (v - lowerBound) / diff;
             };
     }
 
@@ -306,14 +342,6 @@ class Ring extends Effect {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         this.fill();
 
-        gl.bindFramebuffer(gl.FRAMEBUFFER, this.pingpongFramebuffer[0]);
-        gl.uniform1i(texLoc, 3);
-        gl.uniform1f(xLoc, 0);
-        gl.uniform1f(yLoc, 1 / canvas.height);
-        gl.clearColor(this.colors[0], this.colors[1], this.colors[2], 0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        this.fill();
-
         // render background
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.viewport(0, 0, canvas.width, canvas.height);
@@ -323,7 +351,9 @@ class Ring extends Effect {
 
         // render bloomed ring
         this.switchProgram('bloom');
-        gl.uniform1i(gl.getUniformLocation(this.program, 'texture'), 3);
+        gl.uniform1i(texLoc, 3);
+        gl.uniform1f(xLoc, 0);
+        gl.uniform1f(yLoc, 1 / canvas.height);
         this.fill();
 
         // draw ring again

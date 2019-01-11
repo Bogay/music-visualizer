@@ -4,6 +4,8 @@
 <head>
     <meta charset="utf-8" />
     <link rel="stylesheet" type="text/css" href="css/vis.css">
+    <link rel="stylesheet" type="text/css" href="css/colorSlide.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
 
     <script type="text/javascript" src="Common/webgl-utils.js"></script>
     <script type="text/javascript" src="Common/initShaders.js"></script>
@@ -11,7 +13,6 @@
     <script type="text/javascript" src="Common/bogay-utils.js"></script>
     <script type="text/javascript" src="Common/jquery-3.3.1.min.js"></script>
     <script type="text/javascript" src="js/effect.js"></script>
-    <script type="text/javascript" src="js/ring.js"></script>
     <script type="text/javascript" src="js/ring2.js"></script>
     <script type="text/javascript" src="js/flat.js"></script>
     <script type="text/javascript" src="js/main.js"></script>
@@ -41,7 +42,7 @@
 
         uniform sampler2D texture;
 
-        const vec4 mask = vec4(-0.6, -0.6, -0.6, 1);
+        const vec4 mask = vec4(-0.6, -0.55, -0.55, 1);
 
         void main()
         {
@@ -100,27 +101,39 @@
         uniform float x_unit;
         uniform float y_unit;
 
-        uniform float weight[3];
+        uniform int bloom_size;
+        uniform float weight[9];
 
         void main()
         {
+            /*
             vec4 final_color = vec4(0.0);
 
-            final_color += (texture2D(texture, vec2(fTexCoord.x + 7.0 * x_unit, fTexCoord.y + 7.0 * y_unit)) * 0.0044299121055113265);
-            final_color += (texture2D(texture, vec2(fTexCoord.x + 6.0 * x_unit, fTexCoord.y + 6.0 * y_unit)) * 0.00895781211794);
-            final_color += (texture2D(texture, vec2(fTexCoord.x + 5.0 * x_unit, fTexCoord.y + 5.0 * y_unit)) * 0.0215963866053);
-            final_color += (texture2D(texture, vec2(fTexCoord.x + 4.0 * x_unit, fTexCoord.y + 4.0 * y_unit)) * 0.0443683338718);
-            final_color += (texture2D(texture, vec2(fTexCoord.x + 3.0 * x_unit, fTexCoord.y + 3.0 * y_unit)) * 0.0776744219933);
-            final_color += (texture2D(texture, vec2(fTexCoord.x + 2.0 * x_unit, fTexCoord.y + 2.0 * y_unit)) * 0.115876621105);
-            final_color += (texture2D(texture, vec2(fTexCoord.x + 1.0 * x_unit, fTexCoord.y + 1.0 * y_unit)) * 0.147308056121);
-            final_color += (texture2D(texture, vec2(fTexCoord.x + 0.0 * x_unit, fTexCoord.y + 0.0 * y_unit)) * 0.159576912161);
-            final_color += (texture2D(texture, vec2(fTexCoord.x - 1.0 * x_unit, fTexCoord.y - 1.0 * y_unit)) * 0.147308056121);
-            final_color += (texture2D(texture, vec2(fTexCoord.x - 2.0 * x_unit, fTexCoord.y - 2.0 * y_unit)) * 0.115876621105);
-            final_color += (texture2D(texture, vec2(fTexCoord.x - 3.0 * x_unit, fTexCoord.y - 3.0 * y_unit)) * 0.0776744219933);
-            final_color += (texture2D(texture, vec2(fTexCoord.x - 4.0 * x_unit, fTexCoord.y - 4.0 * y_unit)) * 0.0443683338718);
-            final_color += (texture2D(texture, vec2(fTexCoord.x - 5.0 * x_unit, fTexCoord.y - 5.0 * y_unit)) * 0.0215963866053);
-            final_color += (texture2D(texture, vec2(fTexCoord.x - 6.0 * x_unit, fTexCoord.y - 6.0 * y_unit)) * 0.00895781211794);
-            final_color += (texture2D(texture, vec2(fTexCoord.x - 7.0 * x_unit, fTexCoord.y - 7.0 * y_unit)) * 0.0044299121055113265);
+            final_color += (texture2D(texture, vec2(fTexCoord.x + 7.0 * x_unit, fTexCoord.y + 7.0 * y_unit)) * weight[7]);
+            final_color += (texture2D(texture, vec2(fTexCoord.x + 6.0 * x_unit, fTexCoord.y + 6.0 * y_unit)) * weight[6]);
+            final_color += (texture2D(texture, vec2(fTexCoord.x + 5.0 * x_unit, fTexCoord.y + 5.0 * y_unit)) * weight[5]);
+            final_color += (texture2D(texture, vec2(fTexCoord.x + 4.0 * x_unit, fTexCoord.y + 4.0 * y_unit)) * weight[4]);
+            final_color += (texture2D(texture, vec2(fTexCoord.x + 3.0 * x_unit, fTexCoord.y + 3.0 * y_unit)) * weight[3]);
+            final_color += (texture2D(texture, vec2(fTexCoord.x + 2.0 * x_unit, fTexCoord.y + 2.0 * y_unit)) * weight[2]);
+            final_color += (texture2D(texture, vec2(fTexCoord.x + 1.0 * x_unit, fTexCoord.y + 1.0 * y_unit)) * weight[1]);
+            final_color += (texture2D(texture, vec2(fTexCoord.x + 0.0 * x_unit, fTexCoord.y + 0.0 * y_unit)) * weight[0]);
+            final_color += (texture2D(texture, vec2(fTexCoord.x - 1.0 * x_unit, fTexCoord.y - 1.0 * y_unit)) * weight[1]);
+            final_color += (texture2D(texture, vec2(fTexCoord.x - 2.0 * x_unit, fTexCoord.y - 2.0 * y_unit)) * weight[2]);
+            final_color += (texture2D(texture, vec2(fTexCoord.x - 3.0 * x_unit, fTexCoord.y - 3.0 * y_unit)) * weight[3]);
+            final_color += (texture2D(texture, vec2(fTexCoord.x - 4.0 * x_unit, fTexCoord.y - 4.0 * y_unit)) * weight[4]);
+            final_color += (texture2D(texture, vec2(fTexCoord.x - 5.0 * x_unit, fTexCoord.y - 5.0 * y_unit)) * weight[5]);
+            final_color += (texture2D(texture, vec2(fTexCoord.x - 6.0 * x_unit, fTexCoord.y - 6.0 * y_unit)) * weight[6]);
+            final_color += (texture2D(texture, vec2(fTexCoord.x - 7.0 * x_unit, fTexCoord.y - 7.0 * y_unit)) * weight[7]);
+            */
+
+            vec4 final_color = texture2D(texture, fTexCoord) * weight[0];
+            float fi;
+            for(int i=1 ; i<9 ; i++)
+            {
+                fi = float(i);
+                final_color += (texture2D(texture, vec2(fTexCoord.x + fi * x_unit, fTexCoord.y + fi * y_unit)) * weight[i]);
+                final_color += (texture2D(texture, vec2(fTexCoord.x - fi * x_unit, fTexCoord.y - fi * y_unit)) * weight[i]);
+            }
 
             gl_FragColor = final_color;
         }
@@ -128,23 +141,52 @@
 </head>
 
 <body>
+    <div class="cover-div">
+        <div id="param">
+            <label id="musicFileWrapper" class="inputFileLabel">
+                <i class="fa fa-music"></i> <span id="musicFileName">Select your music.</span>
+                <input id="musicFile" style="display: none" type="file" accept="audio/*">
+            </label>
+            <label id="backgroundImageWrapper" class="inputFileLabel">
+                <i class="fa fa-file-image-o"></i> <span id="backgroundImageName">Select background image.</span>
+                <input id="backgroundImage" style="display: none" type="file" accept="image/*">
+            </label>
 
-    <div style="float: left">
-            <br />
-            <canvas id="mainCanvas" width="1080" height="720">
-                Oops ... your browser doesn't support the HTML5 canvas element
-            </canvas>
+            <div id="mColorPicker">
+                <div id="showColor"></div>
+                <div id="colorSlideBox">
+                    <div>
+                        <input type="range" id="rSlide" class="colorSlide" min="0" max="255" step="1" value="128">
+                    </div>
+                    <div>
+                        <input type="range" id="gSlide" class="colorSlide" min="0" max="255" step="1" value="196">
+                    </div>
+                    <div>
+                        <input type="range" id="bSlide" class="colorSlide" min="0" max="255" step="1" value="225">
+                    </div>
+                </div>
+            </div>
+            <button id="rButton">Render!</button>
+        </div>
     </div>
+    <script type="text/javascript">
+        // display file name on change
+        $('#musicFile').on('change', function () {
+            var fileName = this.files[0].name;
+            $('#musicFileName').get(0).innerText = fileName.split(/(\\|\/)/g).pop();
+        });
+        $('#backgroundImage').on('change', function () {
+            var fileName = this.files[0].name;
+            $('#backgroundImageName').get(0).innerText = fileName.split(/(\\|\/)/g).pop();
+        });
 
-    <br />
-    <div id="param">
-        <input id="musicFile" type="file"> <br/>
-        <input id="sqColor" type="color" value="#3251c5"> <br/>
-        <button id="rButton">Render!</button>
-    </div>
-    <br />
-    <audio id="myAudio" crossorigin="anonymous" controls></audio>
+        // set the show color a square
+        var sc = $('#showColor');
+        sc.width(sc.height() + 'px');
 
+        // adjust slide width
+        $('#colorSlideBox').width(($('#mColorPicker').width() - sc.width() - 30) + 'px');
+    </script>
 </body>
 
 </html>

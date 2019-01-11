@@ -1,11 +1,71 @@
-body
-{
+body {
     background-color: #2a2a35;
 }
 
-button
-{
+button {
     padding: 4px;
     border-radius: 5px;
     border: none;
+}
+
+#param {
+    width: 400px;
+    padding: 12px;
+    border-radius: 5px;
+    background-color: #8f8faf;
+}
+
+.inputFileLabel {
+    display: block;
+    padding: 8px;
+    margin: 3px;
+    border-radius: 5px;
+    background-color: #71eecf;
+    color: #797371;
+    text-align: center;
+}
+
+.inputFileLabel:hover {
+    background-color: #80a4c5;
+    color: #d5d5e7;
+    transition-duration: .25s;
+}
+
+.cover-div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    border: none;
+}
+
+#mColorPicker {
+    height: 70px;
+}
+
+#colorSlideBox {
+    float: left;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 7px;
+}
+
+input[id$=Slide] {
+    flex: 1;
+    display: table-cell;
+}
+
+#showColor {
+    float: left;
+    border-radius: 15%;
+    margin: 4px;
+    height: 100%;
+    background-color: rgb(113, 238, 207);
 }
