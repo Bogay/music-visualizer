@@ -67,5 +67,18 @@ input[id$=Slide] {
     border-radius: 15%;
     margin: 4px;
     height: 100%;
-    background-color: rgb(113, 238, 207);
+}
+
+#rButton {
+    background: #71eecf;
+    color: #797371;
+    margin-left: 170px;
+    height: 32px;
+    width: 60px;
+}
+
+#rButton:hover {
+    background: #80a4c5;
+    color: #d5d5e7;
+    transition-duration: 0.25s;
 }
