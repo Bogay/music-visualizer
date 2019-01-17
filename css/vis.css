@@ -29,6 +29,8 @@ button {
     background-color: #80a4c5;
     color: #d5d5e7;
     transition-duration: .25s;
+
+    box-shadow: 0px 2px 3px rgb(61, 60, 65)
 }
 
 .cover-div {
@@ -81,4 +83,6 @@ input[id$=Slide] {
     background: #80a4c5;
     color: #d5d5e7;
     transition-duration: 0.25s;
+
+    box-shadow: 0px 2px 3px rgb(61, 60, 65)
 }
