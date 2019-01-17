@@ -23,7 +23,6 @@
         precision mediump float;
 
         varying vec2 fTexCoord;
-        varying vec4 fPosition;
 
         uniform sampler2D texture;
         uniform vec4 uColor;
@@ -38,7 +37,6 @@
         precision mediump float;
 
         varying vec2 fTexCoord;
-        varying vec4 fPosition;
 
         uniform sampler2D texture;
 
@@ -83,10 +81,12 @@
         attribute vec2 vPosition;
         attribute vec2 vTexCoord;
         varying vec2 fTexCoord;
+        varying vec2 fPosition;
 
         void main()
         {
             fTexCoord = vTexCoord;
+            fPosition = vPosition;
             gl_Position = vec4(vPosition, 0, 1);
         }
     </script>
@@ -106,36 +106,34 @@
 
         void main()
         {
-            /*
-            vec4 final_color = vec4(0.0);
-
-            final_color += (texture2D(texture, vec2(fTexCoord.x + 7.0 * x_unit, fTexCoord.y + 7.0 * y_unit)) * weight[7]);
-            final_color += (texture2D(texture, vec2(fTexCoord.x + 6.0 * x_unit, fTexCoord.y + 6.0 * y_unit)) * weight[6]);
-            final_color += (texture2D(texture, vec2(fTexCoord.x + 5.0 * x_unit, fTexCoord.y + 5.0 * y_unit)) * weight[5]);
-            final_color += (texture2D(texture, vec2(fTexCoord.x + 4.0 * x_unit, fTexCoord.y + 4.0 * y_unit)) * weight[4]);
-            final_color += (texture2D(texture, vec2(fTexCoord.x + 3.0 * x_unit, fTexCoord.y + 3.0 * y_unit)) * weight[3]);
-            final_color += (texture2D(texture, vec2(fTexCoord.x + 2.0 * x_unit, fTexCoord.y + 2.0 * y_unit)) * weight[2]);
-            final_color += (texture2D(texture, vec2(fTexCoord.x + 1.0 * x_unit, fTexCoord.y + 1.0 * y_unit)) * weight[1]);
-            final_color += (texture2D(texture, vec2(fTexCoord.x + 0.0 * x_unit, fTexCoord.y + 0.0 * y_unit)) * weight[0]);
-            final_color += (texture2D(texture, vec2(fTexCoord.x - 1.0 * x_unit, fTexCoord.y - 1.0 * y_unit)) * weight[1]);
-            final_color += (texture2D(texture, vec2(fTexCoord.x - 2.0 * x_unit, fTexCoord.y - 2.0 * y_unit)) * weight[2]);
-            final_color += (texture2D(texture, vec2(fTexCoord.x - 3.0 * x_unit, fTexCoord.y - 3.0 * y_unit)) * weight[3]);
-            final_color += (texture2D(texture, vec2(fTexCoord.x - 4.0 * x_unit, fTexCoord.y - 4.0 * y_unit)) * weight[4]);
-            final_color += (texture2D(texture, vec2(fTexCoord.x - 5.0 * x_unit, fTexCoord.y - 5.0 * y_unit)) * weight[5]);
-            final_color += (texture2D(texture, vec2(fTexCoord.x - 6.0 * x_unit, fTexCoord.y - 6.0 * y_unit)) * weight[6]);
-            final_color += (texture2D(texture, vec2(fTexCoord.x - 7.0 * x_unit, fTexCoord.y - 7.0 * y_unit)) * weight[7]);
-            */
-
             vec4 final_color = texture2D(texture, fTexCoord) * weight[0];
             float fi;
             for(int i=1 ; i<9 ; i++)
             {
                 fi = float(i);
-                final_color += (texture2D(texture, vec2(fTexCoord.x + fi * x_unit, fTexCoord.y + fi * y_unit)) * weight[i]);
-                final_color += (texture2D(texture, vec2(fTexCoord.x - fi * x_unit, fTexCoord.y - fi * y_unit)) * weight[i]);
+                final_color += texture2D(texture, vec2(fTexCoord.x + fi * x_unit, fTexCoord.y + fi * y_unit)) * weight[i];
+                final_color += texture2D(texture, vec2(fTexCoord.x - fi * x_unit, fTexCoord.y - fi * y_unit)) * weight[i];
             }
 
             gl_FragColor = final_color;
+        }
+    </script>
+
+    <script id="circle-fragment-shader" type="x-shader/s-fragment">
+        precision mediump float;
+
+        varying vec2 fPosition;
+        uniform float radius;
+        uniform vec4 uColor;
+
+        void main()
+        {
+            float x = fPosition.x;
+            float y = fPosition.y;
+            if(x*x + y*y > radius*radius)
+                gl_FragColor = uColor;
+            else
+                gl_FragColor = vec4(0);
         }
     </script>
 </head>

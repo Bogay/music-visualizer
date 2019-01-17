@@ -57,29 +57,6 @@ class Ring extends Effect {
             this.volumeBuffer.push(this.getFrequencyDate());
     }
 
-    normalDistribution(std, mean, num) {
-        var r = [];
-        var d = 1 / (std * Math.sqrt(2 * Math.PI));
-        var t, s = 0;
-
-        for(let i=0 ; i<num ; i++)
-        {
-            t = i - mean;
-            t *= -t;
-            t = d * Math.exp(t / (2 * std * std));
-            r.push(t);
-            s += t;
-        }
-        s -= (r[0] / 2);
-        s *= 2;
-
-        r.forEach(function(v, i) {
-            r[i] = v / s;
-        });
-
-        return r;
-    }
-
     configureImage(src, n) {
         var image = new Image();
         image.onload = function () {
@@ -114,10 +91,12 @@ class Ring extends Effect {
         var normalProgram = initShaders(gl, 'no-transform-vertex-shader', 'pure-tex-fragment-shader');
         var bloomProgram = initShaders(gl, 'bg-vertex-shader', 'bloom-fragment-shader');
         var fillProgram = initShaders(gl, 'bg-vertex-shader', 'dark-tex-fragment-shader');
+        var circleProgram = initShaders(gl, 'bg-vertex-shader', 'circle-fragment-shader');
 
         this.programTable['normal'] = normalProgram;
         this.programTable['bloom'] = bloomProgram;
         this.programTable['fill'] = fillProgram;
+        this.programTable['circle'] = circleProgram;
 
         this.switchProgram('normal');
 
@@ -135,13 +114,30 @@ class Ring extends Effect {
 
         // configure uniform
         this.configureUniformLocation();
-        // this.configureUniform();
         gl.uniformMatrix4fv(this.modelingLoc, 0, flatten(this.modeling));
         gl.uniformMatrix4fv(this.viewingLoc, 0, flatten(this.viewing));
         gl.uniformMatrix4fv(this.projectionLoc, 0, flatten(this.projection));
-        
-        gl.uniform1f(gl.getUniformLocation(this.programTable['normal'], 'x_scalor'), this.ratio);
-        gl.uniform4fv(gl.getUniformLocation(this.programTable['normal'], 'uColor'), this.colors);
+
+        this.switchProgram('normal');
+        gl.uniform1f(gl.getUniformLocation(this.program, 'x_scalor'), this.ratio);
+        gl.uniform4fv(gl.getUniformLocation(this.program, 'uColor'), this.colors);
+        gl.uniform1i(gl.getUniformLocation(this.program, 'texture'), 0);
+
+        // for render background
+        this.switchProgram('fill');
+        gl.uniform1i(gl.getUniformLocation(this.program, 'texture'), 1);
+
+        // bloom
+        this.switchProgram('bloom');
+        gl.uniform1fv(gl.getUniformLocation(this.program, 'weight'), normalDistribution(4, 0, 9));
+        // set texture
+        gl.uniform1i(gl.getUniformLocation(this.program, 'texture'), 2);
+
+        // this.switchProgram('circle');
+        // gl.uniform1f(gl.getUniformLocation(this.program, 'radius'), 1.2);
+        // this.colors[3] = 0.5;
+        // gl.uniform4fv(gl.getUniformLocation(this.program, 'uColor'), this.colors);
+        // this.colors[3] = 1;
 
         // configure texture
         this.textures = [];
@@ -158,8 +154,8 @@ class Ring extends Effect {
             gl.bindTexture(gl.TEXTURE_2D, this.textures[i]);
         
             // define size and format of level 0
-            const targetTextureWidth = 1080;
-            const targetTextureHeight = 720;
+            const targetTextureWidth = canvas.width;
+            const targetTextureHeight = canvas.height;
             const level = 0;
             const internalFormat = gl.RGBA;
             const border = 0;
@@ -177,20 +173,6 @@ class Ring extends Effect {
 
             this.pingpongFramebuffer.push(fb);
         }
-
-        this.switchProgram('normal');
-        gl.uniform1i(gl.getUniformLocation(this.programTable['normal'], 'texture'), 0);
-
-        // for render background
-        this.switchProgram('fill');
-        gl.uniform1i(gl.getUniformLocation(this.programTable['fill'], 'texture'), 1);
-
-        // pingpong 
-        this.switchProgram('bloom');
-        // gl.uniform1i(gl.getUniformLocation(this.program, 'bloom_size'), 8);
-        gl.uniform1fv(gl.getUniformLocation(this.program, 'weight'), this.normalDistribution(4, 0, 9));
-        // set texture
-        gl.uniform1i(gl.getUniformLocation(this.program, 'texture'), 2);
 
         // bind textures
         for(let i=0 ; i<4 ; i++)
@@ -223,19 +205,8 @@ class Ring extends Effect {
         console.log('start rendering...');
         this.renderScene();
     }
-
-    mapping(upperBound, lowerBound) {
-        var diff = upperBound - lowerBound;
-        if(diff < 0.01)
-            return function(v) { return 1; };
-        else
-            return function(v) {
-                return 0.25 + 1.25 * (v - lowerBound) / diff;
-            };
-    }
-
+    
     renderRing() {
-        // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         if (!(this.pause)) this.theda += this.speed;
 
         // update modleing matrix
@@ -253,7 +224,7 @@ class Ring extends Effect {
             if(vols[i] > mx) mx = vols[i];
             else if(vols[i] < mn) mn = vols[i];
         }
-        var f = this.mapping(mx, mn);
+        var f = mapping(mx, mn, 0.25, 1.5);
         vols.forEach(function(v, i) {
             vols[i] = Math.max(v * f(v), 0.005);
         });
@@ -325,8 +296,11 @@ class Ring extends Effect {
         gl.viewport(0, 0, canvas.width, canvas.height);
 
         gl.clearColor(1, 1, 1, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.clear(gl.COLOR_BUFFER_BIT);
         this.renderRing();
+
+        this.switchProgram('circle');
+        this.fill();
 
         // bloom
         this.switchProgram('bloom');
@@ -339,7 +313,7 @@ class Ring extends Effect {
         gl.uniform1f(xLoc, 1 / canvas.width);
         gl.uniform1f(yLoc, 0);
         gl.clearColor(this.colors[0], this.colors[1], this.colors[2], 0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.clear(gl.COLOR_BUFFER_BIT);
         this.fill();
 
         // render background
